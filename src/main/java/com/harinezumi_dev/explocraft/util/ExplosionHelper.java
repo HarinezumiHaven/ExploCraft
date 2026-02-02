@@ -1,8 +1,8 @@
 package com.harinezumi_dev.explocraft.util;
 
-import net.minecraft.world.World;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Explosion;
+import net.minecraft.world.World;
 
 public class ExplosionHelper {
     public static void explode(World world, BlockPos pos, float power) {
@@ -14,5 +14,4 @@ public class ExplosionHelper {
             Explosion.Mode.BREAK
         );
     }
-
 }

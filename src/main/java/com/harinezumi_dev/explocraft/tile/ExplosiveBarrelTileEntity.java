@@ -1,24 +1,28 @@
 package com.harinezumi_dev.explocraft.tile;
 
-
+import com.harinezumi_dev.explocraft.container.ExplosiveBarrelContainer;
 import com.harinezumi_dev.explocraft.registry.ModTileEntities;
 import com.harinezumi_dev.explocraft.util.ExplosionHelper;
-
-import net.minecraft.tileentity.LockableLootTileEntity;
-import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.NonNullList;
-import net.minecraft.item.ItemStack;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.inventory.container.Container;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.container.Container;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.tileentity.ITickableTileEntity;
+import net.minecraft.tileentity.LockableLootTileEntity;
+import net.minecraft.util.NonNullList;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 
-public class ExplosiveBarrelTileEntity extends LockableLootTileEntity {
-    private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);;
+public class ExplosiveBarrelTileEntity extends LockableLootTileEntity implements ITickableTileEntity {
+    private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
     private boolean activated = false;
     private int ticksRemaining = -1;
+
+    public ExplosiveBarrelTileEntity() {
+        super(ModTileEntities.EXPLOSIVE_BARREL.get());
+    }
 
     @Override
     public void tick() {
@@ -31,6 +35,8 @@ public class ExplosiveBarrelTileEntity extends LockableLootTileEntity {
     }
 
     public void startCountdown() {
+        if (activated) return;
+
         int redstoneCount = countRedstone();
 
         if (redstoneCount == 0) ticksRemaining = 5 * 20;
@@ -43,13 +49,38 @@ public class ExplosiveBarrelTileEntity extends LockableLootTileEntity {
         setChanged();
     }
 
-    public float getExplosionPower() {
-        int gunpowder = Math.min(countGunpowder(), 20);
-        return 2.0F + (gunpowder / 2.0F);
+    public boolean isActivated() {
+        return activated;
     }
 
-    private void explode() {
+    private int countRedstone() {
+        int count = 0;
+        for (ItemStack stack : items) {
+            if (stack.getItem() == Items.REDSTONE) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    private int countGunpowder() {
+        int count = 0;
+        for (ItemStack stack : items) {
+            if (stack.getItem() == Items.GUNPOWDER) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    public float getExplosionPower() {
+        int gunpowder = Math.min(countGunpowder(), 20);
+        return Math.min(2.0F + (gunpowder / 2.0F), 10.0F);
+    }
+
+    public void explode() {
         ExplosionHelper.explode(level, worldPosition, getExplosionPower());
+        level.removeBlock(worldPosition, false);
     }
 
     @Override
@@ -69,7 +100,7 @@ public class ExplosiveBarrelTileEntity extends LockableLootTileEntity {
 
     @Override
     protected Container createMenu(int id, PlayerInventory player) {
-        return null; // tuta gui later
+        return new ExplosiveBarrelContainer(id, player, this);
     }
 
     @Override
@@ -77,4 +108,18 @@ public class ExplosiveBarrelTileEntity extends LockableLootTileEntity {
         return 27;
     }
 
+    @Override
+    public CompoundNBT save(CompoundNBT compound) {
+        super.save(compound);
+        compound.putBoolean("Activated", activated);
+        compound.putInt("TicksRemaining", ticksRemaining);
+        return compound;
+    }
+
+    @Override
+    public void load(BlockState state, CompoundNBT compound) {
+        super.load(state, compound);
+        activated = compound.getBoolean("Activated");
+        ticksRemaining = compound.getInt("TicksRemaining");
+    }
 }
