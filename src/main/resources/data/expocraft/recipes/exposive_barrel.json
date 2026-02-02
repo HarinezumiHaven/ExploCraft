@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " R ",
+    " B ",
+    " C "
+  ],
+  "key": {
+    "C": { "item": "minecraft:clock" },
+    "R": { "item": "minecraft:repeater" },
+    "B": { "item": "minecraft:barrel" }
+  },
+  "result": {
+    "item": "explocraft:explosive_barrel"
+  }
+}
+
